@@ -192,7 +192,21 @@ fn build(metadata: &Metadata) {
             "clients",
         ] {
             for target in &["all", "install"] {
-                cmd!("make", target)
+                // WARN_CFLAGS= overrides krb5's own configure-detected
+                // -Werror=* flags (config/pre.in: `WARN_CFLAGS = @WARN_CFLAGS@`,
+                // a plain `=` assignment overridable via a `make VAR=`
+                // command-line argument -- not via the CFLAGS/MAKEFLAGS env
+                // vars, which don't reach this variable). krb5's configure
+                // unconditionally probes and enables -Werror=discarded-qualifiers
+                // and friends whenever the compiler supports them, which newer
+                // glibc's const-correct strchr()/etc. overloads turn into real
+                // build failures on toolchains this vendored ~2020s krb5
+                // snapshot was never tested against. Combine with
+                // CFLAGS="-std=gnu17" (set by the consumer, e.g. via the
+                // CFLAGS env var honored above) to also avoid an unconditional
+                // (non-warning) compile error in lib/rpc's K&R-style function
+                // pointer typedefs under GCC's newer C23-leaning defaults.
+                cmd!("make", target, "WARN_CFLAGS=")
                     .dir(metadata.build_dir.join(dir))
                     .set_target_env_vars(metadata)
                     .env("MAKEFLAGS", &make_flags)
