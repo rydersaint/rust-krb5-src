@@ -204,7 +204,7 @@ krb5_cc_resolve (krb5_context context, const char *name, krb5_ccache *cache)
     if (name == NULL)
         return KRB5_CC_BADNAME;
     pfx = NULL;
-    cp = strchr (name, ':');
+    cp = (char *)strchr (name, ':');
     if (!cp) {
         if (krb5_cc_dfl_ops)
             return (*krb5_cc_dfl_ops->resolve)(context, cache, name);
